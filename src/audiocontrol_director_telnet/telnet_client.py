@@ -82,7 +82,7 @@ class OutputID():
         if self._analog != '':
             return f'Z{self._analog}'
         return f'DXO{self._digital}'
-    
+
     def __add__(self, other):
         return str(self) + other
 
@@ -163,6 +163,7 @@ class TelnetClient():
     #         sock.send(seq)
 
     async def async_disconnect(self) -> None:
+        """Disconnects from the telnet server."""
         await self._writer.close()
 
     async def _async_send_command(self, command: str) -> str:
