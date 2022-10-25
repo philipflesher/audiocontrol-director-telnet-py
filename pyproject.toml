@@ -6,12 +6,12 @@ authors = [
 ]
 description = "Telnet client to interface with the AudioControl Director M6400/M6800"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.9"
 ]
 dependencies = [
     "telnetlib3==1.0.4"
