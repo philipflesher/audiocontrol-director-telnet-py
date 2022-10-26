@@ -1,10 +1,14 @@
 """Something"""
 
+import typing
+
 import telnetlib3
 #from telnetlib import IAC, WILL, DONT, ECHO
 
+
 class InputID():
     """Represents an input, which can be either an analog stereo input or a digital stereo input"""
+
     def __init__(self):
         self._analog = ''
         self._digital = ''
@@ -46,9 +50,11 @@ class InputID():
     def __radd__(self, other):
         return other + str(self)
 
+
 class OutputID():
     """Represents an output, which can be either an analog stereo amplifier
         zone or a a digital stereo output"""
+
     def __init__(self):
         self._analog = ''
         self._digital = ''
@@ -89,8 +95,10 @@ class OutputID():
     def __radd__(self, other):
         return other + str(self)
 
+
 class OutputStatus():
     """Represents the status of an analog zone or digital output"""
+
     def __init__(
         self,
         output_id: OutputID,
@@ -137,6 +145,29 @@ class OutputStatus():
         """Signal sense status (True for 'on', False for 'off')"""
         return self._is_signal_sense_on
 
+
+class SystemStatus():
+    """Represents the status of a Director"""
+
+    def __init__(
+        self,
+        name: str,
+        outputs: typing.List[OutputStatus]
+    ):
+        self._name = name
+        self._outputs = outputs
+
+    @property
+    def name(self) -> str:
+        """Name"""
+        return self._name
+
+    @property
+    def outputs(self) -> typing.Dict[str, OutputStatus]:
+        """Output statuses by output ID strings"""
+        return self._outputs
+
+
 class TelnetClient():
     """Represents a client for communicating with the telnet server of an
         AudioControl Director M6400/M6800."""
@@ -153,7 +184,7 @@ class TelnetClient():
         # Disable echo
         #self._writer.send_iac(IAC + DONT + ECHO)
         #self._writer.send_iac(IAC + WILL + ECHO)
-        #await self._writer.drain()
+        # await self._writer.drain()
 
         # write_raw_sequence(tn, telnetlib.IAC + telnetlib.WILL + telnetlib.ECHO)
 
@@ -162,9 +193,9 @@ class TelnetClient():
     #     if sock is not None:
     #         sock.send(seq)
 
-    async def async_disconnect(self) -> None:
+    def disconnect(self) -> None:
         """Disconnects from the telnet server."""
-        await self._writer.close()
+        self._writer.close()
 
     async def _async_send_command(self, command: str) -> str:
         """Sends given command to the server. Automatically appends
@@ -205,7 +236,8 @@ class TelnetClient():
         result = response_parts[1]
         if result == f'xx{command}xx\r':
             # this is a "bad command" response
-            raise BadCommandError(f'Received "bad command" response: xx{command}xx')
+            raise BadCommandError(
+                f'Received "bad command" response: xx{command}xx')
         if result == f'01{command}\r':
             # this is a "success" response
             succeeded = True
@@ -230,7 +262,7 @@ class TelnetClient():
         result = await self._async_send_command(command)
         return self._interpret_result(command, result, False)[1]
 
-    async def async_get_system_status(self) -> OutputStatus:
+    async def async_get_system_status(self) -> SystemStatus:
         """Returns full system status"""
         raw_result = await self.async_get_system_status_raw()
         result_lines = raw_result.split('\r\n')
@@ -244,13 +276,13 @@ class TelnetClient():
         # AMPLIFIER NAME: Director Matrix 6800 #3
         # GLOBAL TEMP: 111 F & Normal
         # GLOBAL VOLTAGE: 126 & Normal
-        # ZONE OUTPUT PROTECT: 
+        # ZONE OUTPUT PROTECT:
         # GLOBAL PROTECTION: Normal
         # THERMAL PROTECTION: Normal
         # IP ADDRESS: 10.111.16.52
         # DATE 10/10/2022
         # TIME '17:30:08
-        # 
+        #
         # ZONES, #, POWER STATE, INPUT, VOLUME, BASS, TREBLE, EQ, GROUP, TEMP, SIG. SENSE
         # Zone 1, 1, on, MX1 & 1, 100, 0, 0, Acoustic and 0, 0, 111 F/Normal, off
         # Zone 2, 2, on, MX2 & 2, 100, 0, 0, Acoustic and 0, 0, 111 F/Normal, off
@@ -267,15 +299,19 @@ class TelnetClient():
         # pylint: enable=trailing-whitespace
         # ------------------------------
 
+        # get the line that represents the name of the device
+        system_name_line = result_lines[0]
+        system_name = system_name_line.split('AMPLIFIER NAME: ')[1]
+
         # get the lines that represent the comma-separated data for each analog zone/digital output
-        ret_val = []
+        outputs = {}
         output_lines = result_lines[11:21]
         for result_line in output_lines:
             fields = result_line.split(', ')
 
             name = fields[0]
 
-            raw_output_id = int(fields[1]) # parse int
+            raw_output_id = int(fields[1])  # parse int
             output_id = OutputID.create_from_status_id(raw_output_id)
 
             is_on = fields[2] == 'on'
@@ -287,16 +323,17 @@ class TelnetClient():
 
             #bass = int(fields[5])
             #treble = int(fields[6])
-            #eq = fields[7] # parse the "Acoustic and 0" format
+            # eq = fields[7] # parse the "Acoustic and 0" format
             #group_id = int(fields[8])
-            #temperature = fields[9] # parse temp
+            # temperature = fields[9] # parse temp
 
             is_signal_sense_on = fields[10] == 'on'
 
-            element = OutputStatus(output_id, name, input_id, is_on, volume, is_signal_sense_on)
-            ret_val.append(element)
+            output = OutputStatus(
+                output_id, name, input_id, is_on, volume, is_signal_sense_on)
+            outputs[str(output_id)] = output
 
-        return ret_val
+        return SystemStatus(system_name, outputs)
 
 
 class BadCommandError(Exception):
