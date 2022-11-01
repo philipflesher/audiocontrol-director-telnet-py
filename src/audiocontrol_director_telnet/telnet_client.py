@@ -1,5 +1,7 @@
 """Classes for communicating with the AudioControl Director M6400/M6800"""
 
+from __future__ import annotations
+
 import typing
 
 import telnetlib3
@@ -13,7 +15,7 @@ class InputID():
         self._digital = ''
 
     @classmethod
-    def all(cls):
+    def all(cls) -> typing.List[str]:
         """Returns list of all input options"""
         return_list = []
         for i in range(1, 9):
@@ -23,21 +25,21 @@ class InputID():
         return return_list
 
     @classmethod
-    def create_analog(cls, selection: int):
+    def create_analog(cls, selection: int) -> InputID:
         """Analog stereo input options are 1-8, inclusive"""
         instance = InputID()
         instance._analog = selection
         return instance
 
     @classmethod
-    def create_digital(cls, selection: str):
+    def create_digital(cls, selection: str) -> InputID:
         """Digital stereo input options are 'a' or 'b'"""
         instance = InputID()
         instance._digital = selection
         return instance
 
     @classmethod
-    def create_from_status_id(cls, status_id: str):
+    def create_from_status_id(cls, status_id: str) -> InputID:
         """Create instance from status ID string"""
         status_parts = status_id.split(' & ')
         numeric_id = int(status_parts[1])
@@ -62,10 +64,10 @@ class InputID():
             return f'MX{self._analog}'
         return f'DX{self._digital}'
 
-    def __add__(self, other):
+    def __add__(self, other: str) -> str:
         return str(self) + other
 
-    def __radd__(self, other):
+    def __radd__(self, other: str) -> str:
         return other + str(self)
 
 
@@ -78,7 +80,7 @@ class OutputID():
         self._digital = ''
 
     @classmethod
-    def all(cls):
+    def all(cls) -> typing.List[str]:
         """Returns list of all output options"""
         return_list = []
         for i in range(1, 9):
@@ -88,21 +90,21 @@ class OutputID():
         return return_list
 
     @classmethod
-    def create_analog(cls, selection: int):
+    def create_analog(cls, selection: int) -> OutputID:
         """Analog stereo amplifier zone options are 1-8, inclusive"""
         instance = OutputID()
         instance._analog = selection
         return instance
 
     @classmethod
-    def create_digital(cls, selection: str):
+    def create_digital(cls, selection: str) -> OutputID:
         """Digital stereo output options are 'a' or 'b'"""
         instance = OutputID()
         instance._digital = selection
         return instance
 
     @classmethod
-    def create_from_status_id(cls, status_id: str):
+    def create_from_status_id(cls, status_id: str) -> OutputID:
         """Create instance from status ID string"""
         numeric_id = int(status_id)
         instance = OutputID()
@@ -124,10 +126,10 @@ class OutputID():
             return f'Z{self._analog}'
         return f'DXO{self._digital}'
 
-    def __add__(self, other):
+    def __add__(self, other: str) -> str:
         return str(self) + other
 
-    def __radd__(self, other):
+    def __radd__(self, other: str) -> str:
         return other + str(self)
 
 
@@ -147,7 +149,7 @@ class OutputStatus():
         self._name = name
         self._input_id = input_id
         self._is_on = is_on
-        self._volume = volume,
+        self._volume = volume
         self._is_signal_sense_on = is_signal_sense_on
 
     @property
@@ -272,7 +274,7 @@ class TelnetClient():
         self,
         input_id: InputID,
         output_id: OutputID
-    ):
+    ) -> None:
         """Maps an input (analog input/digital input) to an output (analog zone/digital output)"""
         command = f'{output_id}source{input_id}'
         result = await self._async_send_command(command)
