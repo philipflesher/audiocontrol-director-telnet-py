@@ -281,6 +281,21 @@ class TelnetClient():
         result = self._interpret_result(command, result, True)[1]
         return result
 
+    async def async_set_output_power_state(self, output_id: OutputID, state: bool) -> None:
+        """Sets an outputs power state to on (True) or off (False)"""
+        state_string = 'on' if state else 'off'
+        command = f'{output_id}{state_string}'
+        result = await self._async_send_command(command)
+        result = self._interpret_result(command, result, True)[1]
+        return result
+
+    async def async_set_output_volume(self, output_id: OutputID, volume: int) -> None:
+        """Sets an outputs volume, range 0..100"""
+        command = f'{output_id}setvol{str(volume)}'
+        result = await self._async_send_command(command)
+        result = self._interpret_result(command, result, True)[1]
+        return result
+
     async def async_get_system_status_raw(self) -> str:
         """Returns full system status in raw form"""
         command = 'SYSTEMstat?'
