@@ -1,17 +1,26 @@
-"""Something"""
+"""Classes for communicating with the AudioControl Director M6400/M6800"""
 
 import typing
 
 import telnetlib3
-#from telnetlib import IAC, WILL, DONT, ECHO
 
 
 class InputID():
     """Represents an input, which can be either an analog stereo input or a digital stereo input"""
 
     def __init__(self):
-        self._analog = ''
+        self._analog = -1
         self._digital = ''
+
+    @classmethod
+    def all(cls):
+        """Returns list of all input options"""
+        return_list = []
+        for i in range(1, 9):
+            return_list.append(InputID.create_analog(i))
+        for i in ('a', 'b'):
+            return_list.append(InputID.create_digital(i))
+        return return_list
 
     @classmethod
     def create_analog(cls, selection: int):
@@ -39,8 +48,17 @@ class InputID():
             instance._digital = 'a' if numeric_id == 9 else 'b'
         return instance
 
+    @property
+    def name(self) -> str:
+        """The friendly name of the input"""
+        if self._analog != -1:
+            second_channel = self._analog * 2
+            first_channel = second_channel - 1
+            return f'Channel {first_channel}-{second_channel}'
+        return f'Digital In {self._digital.upper()}'
+
     def __str__(self) -> str:
-        if self._analog != '':
+        if self._analog != -1:
             return f'MX{self._analog}'
         return f'DX{self._digital}'
 
@@ -56,8 +74,18 @@ class OutputID():
         zone or a a digital stereo output"""
 
     def __init__(self):
-        self._analog = ''
+        self._analog = -1
         self._digital = ''
+
+    @classmethod
+    def all(cls):
+        """Returns list of all output options"""
+        return_list = []
+        for i in range(1, 9):
+            return_list.append(OutputID.create_analog(i))
+        for i in ('a', 'b'):
+            return_list.append(OutputID.create_digital(i))
+        return return_list
 
     @classmethod
     def create_analog(cls, selection: int):
@@ -84,8 +112,15 @@ class OutputID():
             instance._digital = 'a' if numeric_id == 9 else 'b'
         return instance
 
+    @property
+    def name(self) -> str:
+        """The friendly name of the output"""
+        if self._analog != -1:
+            return f'Zone {self._analog}'
+        return f'Digital Out {self._digital.upper()}'
+
     def __str__(self) -> str:
-        if self._analog != '':
+        if self._analog != -1:
             return f'Z{self._analog}'
         return f'DXO{self._digital}'
 
@@ -147,7 +182,7 @@ class OutputStatus():
 
 
 class SystemStatus():
-    """Represents the status of a Director"""
+    """Represents the status of a Director and its outputs"""
 
     def __init__(
         self,
@@ -180,18 +215,6 @@ class TelnetClient():
     async def async_connect(self) -> None:
         """Connects to the telnet server."""
         self._reader, self._writer = await telnetlib3.open_connection(self._host)
-
-        # Disable echo
-        #self._writer.send_iac(IAC + DONT + ECHO)
-        #self._writer.send_iac(IAC + WILL + ECHO)
-        # await self._writer.drain()
-
-        # write_raw_sequence(tn, telnetlib.IAC + telnetlib.WILL + telnetlib.ECHO)
-
-    # def _write_raw_sequence(tn, seq):
-    #     sock = tn.get_socket()
-    #     if sock is not None:
-    #         sock.send(seq)
 
     def disconnect(self) -> None:
         """Disconnects from the telnet server."""
@@ -321,10 +344,10 @@ class TelnetClient():
 
             volume = int(fields[4])
 
-            #bass = int(fields[5])
-            #treble = int(fields[6])
+            # bass = int(fields[5])
+            # treble = int(fields[6])
             # eq = fields[7] # parse the "Acoustic and 0" format
-            #group_id = int(fields[8])
+            # group_id = int(fields[8])
             # temperature = fields[9] # parse temp
 
             is_signal_sense_on = fields[10] == 'on'
