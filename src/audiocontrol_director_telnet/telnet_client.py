@@ -222,7 +222,11 @@ class TelnetClient():
         """Disconnects from the telnet server."""
         self._writer.close()
 
-    async def _async_send_command(self, command: str) -> str:
+    async def _async_send_command(
+        self,
+        command: str,
+        expected_response_line_count: int
+    ) -> str:
         """Sends given command to the server. Automatically appends
             CR to the command string."""
         self._writer.write(command + '\r')
@@ -231,12 +235,14 @@ class TelnetClient():
         empty_bytes = ''
         partial_result = ''
         result = ''
+        line_count = 0
         while True:
             partial_result = await self._reader.read(1024)
             if partial_result == empty_bytes:
                 break
             result += partial_result
-            if result.endswith('\n'):
+            line_count += len(partial_result.split('\n')) - 1
+            if line_count == expected_response_line_count:
                 break
         return result
 
@@ -277,7 +283,7 @@ class TelnetClient():
     ) -> None:
         """Maps an input (analog input/digital input) to an output (analog zone/digital output)"""
         command = f'{output_id}source{input_id}'
-        result = await self._async_send_command(command)
+        result = await self._async_send_command(command, 1)
         result = self._interpret_result(command, result, True)[1]
         return result
 
@@ -285,21 +291,21 @@ class TelnetClient():
         """Sets an outputs power state to on (True) or off (False)"""
         state_string = 'on' if state else 'off'
         command = f'{output_id}{state_string}'
-        result = await self._async_send_command(command)
+        result = await self._async_send_command(command, 1)
         result = self._interpret_result(command, result, True)[1]
         return result
 
     async def async_set_output_volume(self, output_id: OutputID, volume: int) -> None:
         """Sets an outputs volume, range 0..100"""
         command = f'{output_id}setvol{str(volume)}'
-        result = await self._async_send_command(command)
+        result = await self._async_send_command(command, 1)
         result = self._interpret_result(command, result, True)[1]
         return result
 
     async def async_get_system_status_raw(self) -> str:
         """Returns full system status in raw form"""
         command = 'SYSTEMstat?'
-        result = await self._async_send_command(command)
+        result = await self._async_send_command(command, 21)
         return self._interpret_result(command, result, False)[1]
 
     async def async_get_system_status(self) -> SystemStatus:
@@ -342,6 +348,7 @@ class TelnetClient():
         # get the line that represents the name of the device
         system_name_line = result_lines[0]
         system_name = system_name_line.split('AMPLIFIER NAME: ')[1]
+        # system_is_on = system_power_line.
 
         # get the lines that represent the comma-separated data for each analog zone/digital output
         outputs = {}
