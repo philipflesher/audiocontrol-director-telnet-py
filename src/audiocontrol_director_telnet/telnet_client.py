@@ -216,7 +216,11 @@ class TelnetClient():
 
     async def async_connect(self) -> None:
         """Connects to the telnet server."""
-        self._reader, self._writer = await telnetlib3.open_connection(self._host)
+        self._reader, self._writer = await telnetlib3.open_connection(
+            self._host,
+            connect_minwait=0.0,
+            connect_maxwait=0.0
+        )
 
     def disconnect(self) -> None:
         """Disconnects from the telnet server."""
