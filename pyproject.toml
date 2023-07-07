@@ -1,6 +1,6 @@
 [project]
 name = "audiocontrol_director_telnet"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     {name = "Philip Flesher", email = "philip@fleshers.org"},
 ]
@@ -14,5 +14,5 @@ classifiers = [
     "Programming Language :: Python :: 3.9"
 ]
 dependencies = [
-    "telnetlib3==1.0.4"
+    "telnetlib3==2.0.2"
 ]
